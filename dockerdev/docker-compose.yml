@@ -1,0 +1,56 @@
+version: "3"
+
+services:
+
+  grafana:
+    build: .
+    container_name: grafana
+    image: grafana/grafana-go:7.5.1
+    ports:
+      - 3000:3000
+      - 2345:2345
+    networks:
+      - grafana
+    volumes: 
+      - ../dist:/var/lib/grafana/plugins/mongodb-datasource
+    environment:
+      - GF_AUTH_BASIC_ENABLED=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=myorg-mongodb-datasource
+      - PATH=/usr/share/grafana/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/home/grafana/go/bin
+
+  mongo:
+    container_name: grafana_mongo
+    image: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    networks:
+      - grafana
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+  mongo-express:
+    container_name: grafana_mongo_express
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    networks:
+      - grafana
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+
+networks:
+  grafana:
+
+volumes:
+  mongo_data:
+  mongo_config:

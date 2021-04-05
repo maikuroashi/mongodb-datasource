@@ -1,46 +1,58 @@
 import React, { ChangeEvent, PureComponent } from 'react';
 import { LegacyForms } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-import { MyDataSourceOptions, MySecureJsonData } from './types';
+import { MongoDBDataSourceOptions, MongoDBSecureJsonData } from './types';
 
 const { SecretFormField, FormField } = LegacyForms;
 
-interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> {}
+interface Props extends DataSourcePluginOptionsEditorProps<MongoDBDataSourceOptions> {}
 
 interface State {}
 
 export class ConfigEditor extends PureComponent<Props, State> {
-  onPathChange = (event: ChangeEvent<HTMLInputElement>) => {
+  onMaxResultsChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onOptionsChange, options } = this.props;
     const jsonData = {
       ...options.jsonData,
-      path: event.target.value,
+      maxResults: parseInt(event.target.value, 10),
     };
     onOptionsChange({ ...options, jsonData });
   };
+  onUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { onOptionsChange, options } = this.props;
+    onOptionsChange({ ...options, url: event.target.value });
+  };
+  onDatabaseChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { onOptionsChange, options } = this.props;
+    onOptionsChange({ ...options, database: event.target.value });
+  };
+  onUserChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { onOptionsChange, options } = this.props;
+    onOptionsChange({ ...options, user: event.target.value });
+  };
 
   // Secure field (only sent to the backend)
-  onAPIKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
+  onPasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onOptionsChange, options } = this.props;
     onOptionsChange({
       ...options,
       secureJsonData: {
-        apiKey: event.target.value,
+        password: event.target.value,
       },
     });
   };
 
-  onResetAPIKey = () => {
+  onResetPassword = () => {
     const { onOptionsChange, options } = this.props;
     onOptionsChange({
       ...options,
       secureJsonFields: {
         ...options.secureJsonFields,
-        apiKey: false,
+        password: false,
       },
       secureJsonData: {
         ...options.secureJsonData,
-        apiKey: '',
+        password: '',
       },
     });
   };
@@ -48,32 +60,67 @@ export class ConfigEditor extends PureComponent<Props, State> {
   render() {
     const { options } = this.props;
     const { jsonData, secureJsonFields } = options;
-    const secureJsonData = (options.secureJsonData || {}) as MySecureJsonData;
+    const secureJsonData = (options.secureJsonData || {}) as MongoDBSecureJsonData;
 
     return (
-      <div className="gf-form-group">
-        <div className="gf-form">
-          <FormField
-            label="Path"
-            labelWidth={6}
-            inputWidth={20}
-            onChange={this.onPathChange}
-            value={jsonData.path || ''}
-            placeholder="json field returned to frontend"
-          />
-        </div>
-
-        <div className="gf-form-inline">
+      <div>
+        <h3 className="page-heading">MongoDB Connection</h3>
+        <div className="gf-form-group">
           <div className="gf-form">
-            <SecretFormField
-              isConfigured={(secureJsonFields && secureJsonFields.apiKey) as boolean}
-              value={secureJsonData.apiKey || ''}
-              label="API Key"
-              placeholder="secure json field (backend only)"
+            <FormField
+              label="URL"
               labelWidth={6}
               inputWidth={20}
-              onReset={this.onResetAPIKey}
-              onChange={this.onAPIKeyChange}
+              onChange={this.onUrlChange}
+              value={options.url || ''}
+              placeholder="mongodb://localhost:27017"
+            />
+          </div>
+          <div className="gf-form">
+            <FormField
+              label="Database"
+              labelWidth={6}
+              inputWidth={20}
+              onChange={this.onDatabaseChange}
+              value={options.database || ''}
+              placeholder="database name"
+            />
+          </div>
+          <div className="gf-form-inline">
+            <div className="gf-form">
+              <FormField
+                label="User"
+                labelWidth={6}
+                inputWidth={20}
+                onChange={this.onUserChange}
+                value={options.user || ''}
+                placeholder="user"
+              />
+            </div>
+            <div className="gf-form">
+              <SecretFormField
+                isConfigured={(secureJsonFields && secureJsonFields.password) as boolean}
+                value={secureJsonData.password || ''}
+                label="Password"
+                placeholder="password"
+                labelWidth={6}
+                inputWidth={20}
+                onReset={this.onResetPassword}
+                onChange={this.onPasswordChange}
+              />
+            </div>
+          </div>
+        </div>
+        <h3 className="page-heading">Query Limits</h3>
+        <div className="gf-form-group">
+          <div className="gf-form">
+            <FormField
+              label="Max Results"
+              labelWidth={6}
+              inputWidth={20}
+              onChange={this.onMaxResultsChange}
+              value={jsonData.maxResults || ''}
+              placeholder="1000"
             />
           </div>
         </div>

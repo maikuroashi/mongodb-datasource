@@ -1,5 +1,5 @@
 {
-  "name": "myorg-my-plugin",
+  "name": "myorg-mongodb-datasource",
   "version": "1.0.0",
   "description": "Datasource plugin for MongoDB",
   "scripts": {
@@ -7,8 +7,7 @@
     "test": "grafana-toolkit plugin:test",
     "dev": "grafana-toolkit plugin:dev",
     "watch": "grafana-toolkit plugin:dev --watch",
-    "sign": "grafana-toolkit plugin:sign",
-    "start": "yarn watch"
+    "sign": "grafana-toolkit plugin:sign"
   },
   "author": "pwallin",
   "license": "Apache-2.0",

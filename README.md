@@ -19,25 +19,25 @@ A data source backend plugin consists of both frontend and backend components.
 1. Install dependencies
 
    ```bash
-   yarn install
+   npm install
    ```
 
 2. Build plugin in development mode or run in watch mode
 
    ```bash
-   yarn dev
+   npm run-script dev
    ```
 
    or
 
    ```bash
-   yarn watch
+   npm run-script watch
    ```
 
 3. Build plugin in production mode
 
    ```bash
-   yarn build
+   npm run-script build
    ```
 
 ### Backend

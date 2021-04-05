@@ -1,11 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
-  "name": "my-plugin",
-  "id": "myorg-my-plugin",
+  "name": "mongodb-datasource",
+  "id": "myorg-mongodb-datasource",
   "metrics": true,
   "backend": true,
-  "executable": "gpx_my-plugin",
+  "executable": "gpx_mongodb-datasource",
   "info": {
     "description": "Datasource plugin for MongoDB",
     "author": {
