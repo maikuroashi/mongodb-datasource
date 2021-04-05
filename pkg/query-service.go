@@ -14,7 +14,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var dateLiteralRegex = regexp.MustCompile("^Date<(\\d+)>$")
+var dateLiteralRegex = regexp.MustCompile(`^\${new Date\((\d+)\)}`)
+var escapeDateLiteralRegex = regexp.MustCompile(`([^"]+)(new Date\(\d+\))([^"]+)`)
 
 type QueryService struct {
 	mongoClient *mongo.Client
@@ -189,6 +190,7 @@ func tokenizeQuery(queryString string) ([]string, bool) {
 		match[3] = queryString[e1:e3]
 		match[4] = ""
 	}
+	match[3] = escapeDateLiteralRegex.ReplaceAllString(match[3], `$1"${$2}"$3`)
 	return match, true
 }
 
