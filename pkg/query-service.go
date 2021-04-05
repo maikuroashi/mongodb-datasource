@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,7 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var queryRegex = regexp.MustCompile("(\\w+)\\.(\\w+)\\.(find|aggregate)\\s*\\(\\s*([^)]*)\\s*\\)(?:\\.sort\\(\\s*(.+)\\s*\\))?")
 var dateLiteralRegex = regexp.MustCompile("^Date<(\\d+)>$")
 
 type QueryService struct {
@@ -119,36 +119,36 @@ func (qs *QueryService) aggregate(ctx context.Context, mongoQuery *mongoQuery) (
 
 func parseQuery(queryString string, defaultDB string) (*mongoQuery, error) {
 
-	match := queryRegex.FindStringSubmatch(queryString)
-	if match == nil {
+	match, ok := tokenizeQuery(queryString)
+	if !ok {
 		err := fmt.Errorf("'%s' is not a valid MongoDB query expression", queryString)
 		return nil, err
 	}
 
-	db := match[1]
+	db := match[0]
 	if db == "db" {
 		db = defaultDB
 	}
 
-	collection := match[2]
-	method := match[3]
+	collection := match[1]
+	method := match[2]
 
-	if method == "find" && match[4] == "" {
-		match[4] = "{}"
-	} else if method == "aggregate" && match[4] == "" {
-		match[4] = "[]"
+	if method == "find" && match[3] == "" {
+		match[3] = "{}"
+	} else if method == "aggregate" && match[3] == "" {
+		match[3] = "[]"
 	}
 
-	filter, projection, err := decodeArgs(match[4])
+	filter, projection, err := decodeArgs(match[3])
 	if err != nil {
-		err = fmt.Errorf("The args '%s' to the '%s' method are not a valid", match[4], match[3])
+		err = fmt.Errorf("The args '%s' to the '%s' method are not a valid", match[3], match[2])
 		return nil, err
 	}
 	patchLiterals(&filter)
 
-	sort, _, err := decodeArgs(match[5])
+	sort, _, err := decodeArgs(match[4])
 	if err != nil {
-		err = fmt.Errorf("The args '%s' to the '%s' method are not a valid", match[5], "sort")
+		err = fmt.Errorf("The args '%s' to the '%s' method are not a valid", match[4], "sort")
 		return nil, err
 	}
 
@@ -160,6 +160,48 @@ func parseQuery(queryString string, defaultDB string) (*mongoQuery, error) {
 		Projection: projection,
 		Sort:       sort,
 	}, err
+}
+
+func tokenizeQuery(queryString string) ([]string, bool) {
+
+	match := make([]string, 5)
+	s1, e1 := findSentinel(queryString, ".find(", ".aggregate(")
+	if s1 == -1 {
+		return nil, false
+	}
+
+	names := strings.Split(queryString[:e1-1], ".")
+	if len(names) != 3 {
+		return nil, false
+	}
+	copy(match, names)
+
+	s2, e2 := findSentinel(queryString, ").sort(")
+	e3 := strings.LastIndex(queryString, ")")
+	if e3 != len(queryString)-1 {
+		return nil, false
+	}
+
+	if s2 != -1 {
+		match[3] = queryString[e1:s2]
+		match[4] = queryString[e2:e3]
+	} else {
+		match[3] = queryString[e1:e3]
+		match[4] = ""
+	}
+	return match, true
+}
+
+func findSentinel(value string, sentinels ...string) (int, int) {
+
+	for _, sentinal := range sentinels {
+
+		s := strings.Index(value, sentinal)
+		if s != -1 {
+			return s, s + len(sentinal)
+		}
+	}
+	return -1, -1
 }
 
 func decodeArgs(args string) (interface{}, interface{}, error) {
