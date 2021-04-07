@@ -41,7 +41,9 @@ func NewQueryService(ctx context.Context, url string, defaultDB string, user str
 	clientOptions.Auth = &options.Credential{Username: user, Password: password}
 
 	client, err := mongo.Connect(ctx, clientOptions)
-
+	if err != nil {
+		return nil, err
+	}
 	return &QueryService{client, defaultDB, maxResult}, err
 }
 
