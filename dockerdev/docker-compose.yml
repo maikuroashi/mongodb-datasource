@@ -6,6 +6,8 @@ services:
     build: .
     container_name: grafana
     image: grafana/grafana-go:7.5.1
+    cap_add:
+      - SYS_PTRACE
     ports:
       - 3000:3000
       - 2345:2345
