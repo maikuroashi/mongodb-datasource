@@ -20,7 +20,6 @@ var escapeDateLiteralRegex = regexp.MustCompile(`([^"]+)(new Date\(\d+\))([^"]+)
 type QueryService struct {
 	mongoClient *mongo.Client
 	defaultDB   string
-	maxResult   int
 }
 
 type mongoQuery struct {
@@ -34,7 +33,7 @@ type mongoQuery struct {
 
 type DataHandler = func(primitive.D)
 
-func NewQueryService(ctx context.Context, url string, defaultDB string, user string, password string, maxResult int) (*QueryService, error) {
+func NewQueryService(ctx context.Context, url string, defaultDB string, user string, password string) (*QueryService, error) {
 
 	clientOptions := options.Client()
 	clientOptions.ApplyURI(url)
@@ -44,18 +43,18 @@ func NewQueryService(ctx context.Context, url string, defaultDB string, user str
 	if err != nil {
 		return nil, err
 	}
-	return &QueryService{client, defaultDB, maxResult}, err
+	return &QueryService{client, defaultDB}, err
 }
 
-func (qs *QueryService) Dispose() {
-	qs.mongoClient.Disconnect(context.Background())
+func (qs *QueryService) Disconnect(ctx context.Context) error {
+	return qs.mongoClient.Disconnect(ctx)
 }
 
 func (qs *QueryService) Ping(ctx context.Context) error {
 	return qs.mongoClient.Ping(ctx, nil)
 }
 
-func (qs *QueryService) RunQuery(ctx context.Context, queryString string, handler DataHandler) error {
+func (qs *QueryService) RunQuery(ctx context.Context, queryString string, limit int, handler DataHandler) error {
 
 	mongoQuery, err := parseQuery(queryString, qs.defaultDB)
 	if err != nil {
@@ -80,7 +79,7 @@ func (qs *QueryService) RunQuery(ctx context.Context, queryString string, handle
 	for cur.Next(ctx) {
 
 		count++
-		if qs.maxResult > 0 && count > qs.maxResult {
+		if limit > 0 && count > limit {
 			break
 		}
 

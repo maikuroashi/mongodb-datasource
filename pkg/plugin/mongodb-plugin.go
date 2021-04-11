@@ -42,7 +42,7 @@ func (td *MongoDBDatasource) QueryData(ctx context.Context, req *backend.QueryDa
 
 	log.DefaultLogger.Info("QueryData", "request", req)
 
-	queryService, err := td.queryService(req.PluginContext)
+	instance, err := td.pluginInstance(req.PluginContext)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (td *MongoDBDatasource) QueryData(ctx context.Context, req *backend.QueryDa
 
 	// loop over queries and execute them individually.
 	for _, q := range req.Queries {
-		res := td.query(ctx, queryService, q)
+		res := instance.query(ctx, q)
 
 		// save the response in a hashmap
 		// based on with RefID as identifier
@@ -66,44 +66,15 @@ type queryModel struct {
 	QueryText string `json:"queryText"`
 }
 
-func (td *MongoDBDatasource) query(ctx context.Context, queryService *query.QueryService, query backend.DataQuery) backend.DataResponse {
-
-	response := backend.DataResponse{}
-
-	// Unmarshal the json into our queryModel
-	var qm queryModel
-	response.Error = json.Unmarshal(query.JSON, &qm)
-	if response.Error != nil {
-		return response
-	}
-
-	// Log a warning if `Format` is empty.
-	if qm.Format == "" {
-		log.DefaultLogger.Warn("format is empty. defaulting to time series")
-	}
-
-	ds := field.NewFieldBuilder(10)
-	response.Error = queryService.RunQuery(ctx, qm.QueryText, ds.ProcessRecord)
-	if response.Error != nil {
-		return response
-	}
-
-	// create data frame response
-	frame := data.NewFrame("response", ds.BuildFields()...)
-	response.Frames = append(response.Frames, frame)
-
-	return response
-}
-
 // CheckHealth handles health checks sent from Grafana to the plugin.
 // The main use case for these health checks is the test button on the
 // datasource configuration page which allows users to verify that
 // a datasource is working as expected.
 func (td *MongoDBDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 
-	queryService, err := td.queryService(req.PluginContext)
+	instance, err := td.pluginInstance(req.PluginContext)
 	if err == nil {
-		err = queryService.Ping(ctx)
+		err = instance.queryService.Ping(ctx)
 	}
 
 	status := backend.HealthStatusOk
@@ -119,10 +90,15 @@ func (td *MongoDBDatasource) CheckHealth(ctx context.Context, req *backend.Check
 	}, nil
 }
 
-func (td *MongoDBDatasource) queryService(pluginContext backend.PluginContext) (*query.QueryService, error) {
+func (td *MongoDBDatasource) pluginInstance(pluginContext backend.PluginContext) (*pluginInstance, error) {
 
 	instance, err := td.im.Get(pluginContext)
-	return instance.(*query.QueryService), err
+	return instance.(*pluginInstance), err
+}
+
+type pluginInstance struct {
+	queryService *query.QueryService
+	maxResult    int
 }
 
 func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
@@ -141,7 +117,48 @@ func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instance
 		maxResult = int(value.(float64))
 	}
 
-	return query.NewQueryService(context.Background(), url, defaultDB, user, password, maxResult)
+	queryService, err := query.NewQueryService(context.Background(), url, defaultDB, user, password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pluginInstance{
+		queryService: queryService,
+		maxResult:    maxResult,
+	}, err
+}
+
+func (is *pluginInstance) query(ctx context.Context, query backend.DataQuery) backend.DataResponse {
+
+	response := backend.DataResponse{}
+
+	// Unmarshal the json into our queryModel
+	var qm queryModel
+	response.Error = json.Unmarshal(query.JSON, &qm)
+	if response.Error != nil {
+		return response
+	}
+
+	// Log a warning if `Format` is empty.
+	if qm.Format == "" {
+		log.DefaultLogger.Warn("format is empty. defaulting to time series")
+	}
+
+	ds := field.NewFieldBuilder(10)
+	response.Error = is.queryService.RunQuery(ctx, qm.QueryText, is.maxResult, ds.ProcessRecord)
+	if response.Error != nil {
+		return response
+	}
+
+	// create data frame response
+	frame := data.NewFrame("response", ds.BuildFields()...)
+	response.Frames = append(response.Frames, frame)
+
+	return response
+}
+
+func (is *pluginInstance) Dispose() {
+	is.queryService.Disconnect(context.Background())
 }
 
 func unmarshalCustomSettings(raw json.RawMessage) map[string]interface{} {
