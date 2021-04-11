@@ -1,5 +1,5 @@
 {
-  "name": "myorg-mongodb-datasource",
+  "name": "maikuroashi-mongodb-datasource",
   "version": "1.0.0",
   "description": "Datasource plugin for MongoDB",
   "scripts": {

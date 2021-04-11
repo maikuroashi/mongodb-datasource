@@ -1,4 +1,4 @@
-module github.com/grafana/grafana-starter-datasource-backend
+module github.com/maikuroashi/mongodb-datasource
 
 go 1.15
 

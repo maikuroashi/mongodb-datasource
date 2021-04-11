@@ -20,7 +20,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=myorg-mongodb-datasource
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=maikuroashi-mongodb-datasource
       - PATH=/usr/share/grafana/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/home/grafana/go/bin
 
   mongo:

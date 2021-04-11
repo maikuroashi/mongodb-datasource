@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
   "name": "mongodb-datasource",
-  "id": "myorg-mongodb-datasource",
+  "id": "maikuroashi-mongodb-datasource",
   "metrics": true,
   "backend": true,
   "executable": "gpx_mongodb-datasource",
