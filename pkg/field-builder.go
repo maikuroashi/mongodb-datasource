@@ -114,34 +114,28 @@ func (f *field) convertValue(fieldType data.FieldType, value interface{}) interf
 
 func asFieldValue(value interface{}) interface{} {
 
-	switch value.(type) {
+	switch value := value.(type) {
 
 	case primitive.ObjectID:
-		v := value.(primitive.ObjectID)
-		return v.String()
+		return value.String()
 
 	case primitive.Undefined:
 		return "undefined"
 
 	case primitive.DateTime:
-		v := value.(primitive.DateTime)
-		return v.Time()
+		return value.Time()
 
 	case primitive.Decimal128:
-		v := value.(primitive.Decimal128)
-		return v.String()
+		return value.String()
 
 	case primitive.Regex:
-		v := value.(primitive.Regex)
-		return fmt.Sprintf("/%s/%s", v.Pattern, v.Options)
+		return fmt.Sprintf("/%s/%s", value.Pattern, value.Options)
 
 	case primitive.Binary:
-		v := value.(primitive.Binary)
-		return fmt.Sprintf(`BinData(%d, "%s")`, v.Subtype, base64.StdEncoding.EncodeToString(v.Data))
+		return fmt.Sprintf(`BinData(%d, "%s")`, value.Subtype, base64.StdEncoding.EncodeToString(value.Data))
 
 	case primitive.DBPointer:
-		v := value.(primitive.DBPointer)
-		return fmt.Sprintf(`DBPointer("%s", %s)`, v.DB, v.Pointer)
+		return fmt.Sprintf(`DBPointer("%s", %s)`, value.DB, value.Pointer)
 
 	case primitive.A:
 		return asJsonString(value)
@@ -164,47 +158,34 @@ func asJsonString(value interface{}) string {
 }
 
 func asNullableValue(value interface{}) interface{} {
-	switch value.(type) {
+	switch value := value.(type) {
 
 	case int8:
-		v := value.(int8)
-		return &v
+		return &value
 	case int16:
-		v := value.(int16)
-		return &v
+		return &value
 	case int32:
-		v := value.(int32)
-		return &v
+		return &value
 	case int64:
-		v := value.(int64)
-		return &v
+		return &value
 	case uint8:
-		v := value.(uint8)
-		return &v
+		return &value
 	case uint16:
-		v := value.(uint16)
-		return &v
+		return &value
 	case uint32:
-		v := value.(uint32)
-		return &v
+		return &value
 	case uint64:
-		v := value.(uint64)
-		return &v
+		return &value
 	case float32:
-		v := value.(float32)
-		return &v
+		return &value
 	case float64:
-		v := value.(float64)
-		return &v
+		return &value
 	case string:
-		v := value.(string)
-		return &v
+		return &value
 	case bool:
-		v := value.(bool)
-		return &v
+		return &value
 	case time.Time:
-		v := value.(time.Time)
-		return &v
+		return &value
 	default:
 		return value
 	}

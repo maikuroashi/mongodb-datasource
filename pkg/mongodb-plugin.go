@@ -133,7 +133,7 @@ func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instance
 	defaultDB := setting.Database
 
 	secureData := setting.DecryptedSecureJSONData
-	password, _ := secureData["password"]
+	password := secureData["password"]
 
 	customSettings := unmarshalCustomSettings(setting.JSONData)
 	value, ok := customSettings["maxResults"]

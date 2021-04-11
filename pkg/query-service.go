@@ -144,14 +144,14 @@ func parseQuery(queryString string, defaultDB string) (*mongoQuery, error) {
 
 	filter, projection, err := decodeArgs(match[3])
 	if err != nil {
-		err = fmt.Errorf("The args '%s' to the '%s' method are not a valid", match[3], match[2])
+		err = fmt.Errorf("the args '%s' to the '%s' method are not a valid", match[3], method)
 		return nil, err
 	}
 	patchLiterals(&filter)
 
 	sort, _, err := decodeArgs(match[4])
 	if err != nil {
-		err = fmt.Errorf("The args '%s' to the '%s' method are not a valid", match[4], "sort")
+		err = fmt.Errorf("the args '%s' to the '%s' method are not a valid", match[4], "sort")
 		return nil, err
 	}
 
