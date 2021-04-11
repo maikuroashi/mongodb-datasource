@@ -1,10 +1,11 @@
-package main
+package plugin
 
 import (
 	"context"
 	"encoding/json"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/maikuroashi/mongodb-datasource/pkg/field"
+	"github.com/maikuroashi/mongodb-datasource/pkg/query"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
@@ -14,7 +15,7 @@ import (
 )
 
 // newDatasource returns datasource.ServeOpts.
-func newDatasource() datasource.ServeOpts {
+func NewDatasource() datasource.ServeOpts {
 	// creates a instance manager for your plugin. The function passed
 	// into `NewInstanceManger` is called when the instance is created
 	// for the first time or when a datasource configuration changed.
@@ -65,7 +66,7 @@ type queryModel struct {
 	QueryText string `json:"queryText"`
 }
 
-func (td *MongoDBDatasource) query(ctx context.Context, queryService *QueryService, query backend.DataQuery) backend.DataResponse {
+func (td *MongoDBDatasource) query(ctx context.Context, queryService *query.QueryService, query backend.DataQuery) backend.DataResponse {
 
 	response := backend.DataResponse{}
 
@@ -81,10 +82,8 @@ func (td *MongoDBDatasource) query(ctx context.Context, queryService *QueryServi
 		log.DefaultLogger.Warn("format is empty. defaulting to time series")
 	}
 
-	ds := NewFieldBuilder(10)
-	response.Error = queryService.RunQuery(ctx, qm.QueryText, func(record primitive.D) {
-		ds.ProcessRecord(record)
-	})
+	ds := field.NewFieldBuilder(10)
+	response.Error = queryService.RunQuery(ctx, qm.QueryText, ds.ProcessRecord)
 	if response.Error != nil {
 		return response
 	}
@@ -120,10 +119,10 @@ func (td *MongoDBDatasource) CheckHealth(ctx context.Context, req *backend.Check
 	}, nil
 }
 
-func (td *MongoDBDatasource) queryService(pluginContext backend.PluginContext) (*QueryService, error) {
+func (td *MongoDBDatasource) queryService(pluginContext backend.PluginContext) (*query.QueryService, error) {
 
 	instance, err := td.im.Get(pluginContext)
-	return instance.(*QueryService), err
+	return instance.(*query.QueryService), err
 }
 
 func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
@@ -142,7 +141,7 @@ func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instance
 		maxResult = int(value.(float64))
 	}
 
-	return NewQueryService(context.Background(), url, defaultDB, user, password, maxResult)
+	return query.NewQueryService(context.Background(), url, defaultDB, user, password, maxResult)
 }
 
 func unmarshalCustomSettings(raw json.RawMessage) map[string]interface{} {

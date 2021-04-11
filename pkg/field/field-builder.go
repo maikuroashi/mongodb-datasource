@@ -1,4 +1,4 @@
-package main
+package field
 
 import (
 	"encoding/base64"
