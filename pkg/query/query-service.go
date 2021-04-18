@@ -17,7 +17,13 @@ import (
 var dateLiteralRegex = regexp.MustCompile(`^\${new Date\((\d+)\)}`)
 var escapeDateLiteralRegex = regexp.MustCompile(`([^"]+)(new Date\(\d+\))([^"]+)`)
 
-type QueryService struct {
+type QueryService interface {
+	Disconnect(ctx context.Context) error
+	Ping(ctx context.Context) error
+	RunQuery(ctx context.Context, queryString string, limit int, handler DataHandler) error
+}
+
+type queryService struct {
 	mongoClient *mongo.Client
 	defaultDB   string
 }
@@ -33,7 +39,7 @@ type mongoQuery struct {
 
 type DataHandler = func(primitive.D)
 
-func NewQueryService(ctx context.Context, url string, defaultDB string, user string, password string) (*QueryService, error) {
+func NewQueryService(ctx context.Context, url string, defaultDB string, user string, password string) (QueryService, error) {
 
 	clientOptions := options.Client()
 	clientOptions.ApplyURI(url)
@@ -43,18 +49,18 @@ func NewQueryService(ctx context.Context, url string, defaultDB string, user str
 	if err != nil {
 		return nil, err
 	}
-	return &QueryService{client, defaultDB}, err
+	return &queryService{client, defaultDB}, err
 }
 
-func (qs *QueryService) Disconnect(ctx context.Context) error {
+func (qs *queryService) Disconnect(ctx context.Context) error {
 	return qs.mongoClient.Disconnect(ctx)
 }
 
-func (qs *QueryService) Ping(ctx context.Context) error {
+func (qs *queryService) Ping(ctx context.Context) error {
 	return qs.mongoClient.Ping(ctx, nil)
 }
 
-func (qs *QueryService) RunQuery(ctx context.Context, queryString string, limit int, handler DataHandler) error {
+func (qs *queryService) RunQuery(ctx context.Context, queryString string, limit int, handler DataHandler) error {
 
 	mongoQuery, err := parseQuery(queryString, qs.defaultDB)
 	if err != nil {
@@ -95,14 +101,14 @@ func (qs *QueryService) RunQuery(ctx context.Context, queryString string, limit 
 	return err
 }
 
-func (qs *QueryService) find(ctx context.Context, mongoQuery *mongoQuery) (*mongo.Cursor, error) {
+func (qs *queryService) find(ctx context.Context, mongoQuery *mongoQuery) (*mongo.Cursor, error) {
 
 	collection := qs.mongoClient.Database(mongoQuery.Database).Collection(mongoQuery.Collection)
 	queryOptions := options.FindOptions{Projection: mongoQuery.Projection, Sort: mongoQuery.Sort}
 	return collection.Find(ctx, mongoQuery.Query, &queryOptions)
 }
 
-func (qs *QueryService) aggregate(ctx context.Context, mongoQuery *mongoQuery) (*mongo.Cursor, error) {
+func (qs *queryService) aggregate(ctx context.Context, mongoQuery *mongoQuery) (*mongo.Cursor, error) {
 
 	queryDoc, ok := mongoQuery.Query.(primitive.A)
 	if !ok {

@@ -97,7 +97,7 @@ func (td *MongoDBDatasource) pluginInstance(pluginContext backend.PluginContext)
 }
 
 type pluginInstance struct {
-	queryService *query.QueryService
+	queryService query.QueryService
 	maxResult    int
 }
 
