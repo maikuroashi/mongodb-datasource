@@ -21,7 +21,7 @@
             "mode": "remote",
             "remotePath": "${workspaceFolder}",
             "port": 2345,
-            "host": "172.20.239.27"
+            "host": "localhost"
         }
     ]
 }
