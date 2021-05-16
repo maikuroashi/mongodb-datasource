@@ -31,7 +31,7 @@ func (f *field) append(value interface{}) {
 	f.Values = append(f.Values, asFieldValue(value))
 }
 
-func (f *field) exendTo(size int) {
+func (f *field) expandTo(size int) {
 	for len(f.Values) < size {
 		f.append(nil)
 	}
@@ -283,7 +283,7 @@ func (fb *FieldBuilder) ProcessRecord(record primitive.D) {
 
 	for _, e := range record {
 		field := fb.field(e.Key)
-		field.exendTo(fb.recordCount)
+		field.expandTo(fb.recordCount)
 		field.append(e.Value)
 	}
 	fb.recordCount++
@@ -293,7 +293,7 @@ func (fb *FieldBuilder) BuildFields() []*data.Field {
 
 	fields := make([]*data.Field, 0, fb.recordCount)
 	for _, field := range fb.fields {
-		field.exendTo(fb.recordCount)
+		field.expandTo(fb.recordCount)
 		fields = append(fields, field.build())
 	}
 	return fields
