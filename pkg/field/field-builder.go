@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -60,7 +61,7 @@ func (f *field) build() *data.Field {
 	field := data.NewFieldFromFieldType(fieldType, len(f.Values))
 	field.Name = f.Name
 	for i, v := range f.Values {
-		v = f.convertValue(fieldType, v)
+		v = convertValue(fieldType, v)
 		field.Set(i, v)
 	}
 	return field
@@ -95,7 +96,7 @@ func (f *field) firstValue() interface{} {
 	return result
 }
 
-func (f *field) convertValue(fieldType data.FieldType, value interface{}) interface{} {
+func convertValue(fieldType data.FieldType, value interface{}) interface{} {
 
 	result := value
 
@@ -106,7 +107,7 @@ func (f *field) convertValue(fieldType data.FieldType, value interface{}) interf
 		}
 	}
 
-	if f.Nullable {
+	if fieldType.Nullable() {
 		result = asNullableValue(result)
 	}
 	return result
@@ -117,10 +118,13 @@ func asFieldValue(value interface{}) interface{} {
 	switch value := value.(type) {
 
 	case primitive.ObjectID:
-		return value.String()
+		return fmt.Sprintf("ObjectId(%q)", value.Hex())
 
 	case primitive.Undefined:
 		return "undefined"
+
+	case primitive.Null:
+		return "null"
 
 	case primitive.DateTime:
 		return value.Time()
@@ -132,15 +136,19 @@ func asFieldValue(value interface{}) interface{} {
 		return fmt.Sprintf("/%s/%s", value.Pattern, value.Options)
 
 	case primitive.Binary:
-		return fmt.Sprintf(`BinData(%d, "%s")`, value.Subtype, base64.StdEncoding.EncodeToString(value.Data))
+		return fmt.Sprintf(`BinData(%d, %q)`, value.Subtype, base64.StdEncoding.EncodeToString(value.Data))
 
 	case primitive.DBPointer:
-		return fmt.Sprintf(`DBPointer("%s", %s)`, value.DB, value.Pointer)
+		return fmt.Sprintf(`DBPointer(%q, %s)`, value.DB, asFieldValue(value.Pointer))
 
 	case primitive.A:
-		return asJsonString(value)
+		result := asJsonString(primitive.M{"value": value})
+		return result[strings.Index(result, "[") : strings.Index(result, "]")+1]
 
 	case primitive.D:
+		return asJsonString(value)
+
+	case primitive.M:
 		return asJsonString(value)
 
 	default:
@@ -150,7 +158,7 @@ func asFieldValue(value interface{}) interface{} {
 
 func asJsonString(value interface{}) string {
 
-	json, err := bson.MarshalExtJSON(value, true, false)
+	json, err := bson.MarshalExtJSON(value, false, false)
 	if err != nil {
 		return fmt.Sprintf("%v", value)
 	}
