@@ -32,8 +32,10 @@ func (f *field) append(value interface{}) {
 }
 
 func (f *field) expandTo(size int) {
-	for len(f.Values) < size {
-		f.append(nil)
+
+	if len(f.Values) < size {
+		f.Nullable = true
+		f.Values = append(f.Values, make([]interface{}, size-len(f.Values))...)
 	}
 }
 
