@@ -1,69 +1,101 @@
-# Grafana Data Source Backend Plugin Template
+# Grafana Data Source Backend Plugin For MongoDB
 
-[![Build](https://github.com/grafana/grafana-starter-datasource-backend/workflows/CI/badge.svg)](https://github.com/grafana/grafana-datasource-backend/actions?query=workflow%3A%22CI%22)
+This is an implementation of a Grafana Data Source Backend Plugin to allow Grafana to query and visualize data from a MongoDB database. A data source backend plugin consists of both frontend and backend components. For more information about backend plugins, refer to the documentation on [Backend plugins](https://grafana.com/docs/grafana/latest/developers/plugins/backend/).
 
-This template is a starting point for building Grafana Data Source Backend Plugins
+## Requirements
 
-## What is Grafana Data Source Backend Plugin?
+* Grafana > 7.x
+* MongoDB > 2.6
 
-Grafana supports a wide range of data sources, including Prometheus, MySQL, and even Datadog. There’s a good chance you can already visualize metrics from the systems you have set up. In some cases, though, you already have an in-house metrics solution that you’d like to add to your Grafana dashboards. Grafana Data Source Plugins enables integrating such solutions with Grafana.
+## Build
 
-For more information about backend plugins, refer to the documentation on [Backend plugins](https://grafana.com/docs/grafana/latest/developers/plugins/backend/).
+The front end and back end components can be built into the `dist` directory by running:
 
-## Getting started
+```sh
+make all
+```
 
-A data source backend plugin consists of both frontend and backend components.
+## Installation
 
-### Frontend
+The plugin can be installed in Grafana by copying the contents of the `dist` directory into a sub directory, usual named after the plugin e.g. `mongodb-datasource`, in the Grafana plugin directory.
+For security reasons Grafana will, by default, not load an unsigned plugin so it is necessary to define the following environment variable with the plugin identifier:
 
-1. Install dependencies
+```sh
+GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=maikuroashi-mongodb-datasource
+```
 
-   ```bash
-   npm install
-   ```
+## Query Syntax
 
-2. Build plugin in development mode or run in watch mode
+The plugin aims to support a subset of the query syntax provided by the MongoDb shell. Both `find` and `aggregation` queries are supported. However, one key difference is that the documents passed to the query must be valid JSON with the exception of limited support for literal values e.g. `new Date(1622353314804)`.
 
-   ```bash
-   npm run-script dev
-   ```
+Grafana defines a number of global variables that can be substituted into a query using the `${}` syntax before it is passed to the backend plugin. The `$__from` and `$__to` variables allow the dashboard's current date range to be integrated into a query. For further information refer to the Grafana [Global Variables](https://grafana.com/docs/grafana/latest/variables/variable-types/global-variables/) documentation.
 
-   or
+The following are some examples of the query syntax, including using Grafana global variables to refer to the dashboard's date range. For further information about MongoDB queries see the [Mongo DB Documentation](https://docs.mongodb.com/manual/tutorial/query-documents/).
 
-   ```bash
-   npm run-script watch
-   ```
+```javascript
+//Find all documents in the employees collection of the default DB
+db.employees.find()
 
-3. Build plugin in production mode
+//Find documents in the employees collection of the default DB with a first name of "Bob"
+db.employees.find({"firstName": "Bob"})
 
-   ```bash
-   npm run-script build
-   ```
+//Find all documents in the employees collection of the default DB and return just the "lastName"
+db.employees.find({}, {"_id": 0, "lastName": 1})
 
-### Backend
+//Find all documents in the employees collection of the default DB and order the results by "lastName"
+db.employees.find({}, {}).sort({"lastName": 1});
 
-1. Update [Grafana plugin SDK for Go](https://grafana.com/docs/grafana/latest/developers/plugins/backend/grafana-plugin-sdk-for-go/) dependency to the latest minor version:
+//Find all documents in the employees collection of the default DB within a given date range.
+db.employees.find({"startDate" : { "$gte": new Date($__from), "$lt": new Date($__to) }})
 
-   ```bash
-   go get -u github.com/grafana/grafana-plugin-sdk-go
-   ```
+//Find all documents in the products collection of the sales database. 
+sales.products.find();
 
-2. Build backend plugin binaries for Linux, Windows and Darwin:
+//Find all documents in the employees collection of the default DB with a first name of "Bob" and order results by "lastName"
+db.employees.aggregate([
+  {
+    "$match": {
+      "firstName": "Bob",
+    }
+  },
+  {
+    "$sort": {
+      "$lastName": 1,
+    }
+  }
+])
+```
 
-   ```bash
-   mage -v
-   ```
+## Development
 
-3. List all available Mage targets for additional commands:
+The `dockerdev` directory contains a `docker-compose.yaml` file which can be used to launch an instance of Grafana with the plugin installed and a MongoDB database instance. The Grafana UI is exposed on the host at port `3000` and MongoDb on the default port of `27017`.
 
-   ```bash
-   mage -l
-   ```
+The plugin can be configured to connect to the Docker MongoDb instance by selecting the `Configuration (Cog) / Datasources` page from the side-bar, clicking the `Add data source` button, and then entering the following details in the configuration page:
 
-## Learn more
+```properties
+Name: MongoDb
+URL: mongodb://mongo:27017
+Database: test
+User: root
+Password: example
+```
 
-- [Build a data source backend plugin tutorial](https://grafana.com/tutorials/build-a-data-source-backend-plugin)
-- [Grafana documentation](https://grafana.com/docs/)
-- [Grafana Tutorials](https://grafana.com/tutorials/) - Grafana Tutorials are step-by-step guides that help you make the most of Grafana
-- [Grafana UI Library](https://developers.grafana.com/ui) - UI components to help you build interfaces using Grafana Design System
-- [Grafana plugin SDK for Go](https://grafana.com/docs/grafana/latest/developers/plugins/backend/grafana-plugin-sdk-for-go/)
+### Remote Debugging
+
+The compose file builds a custom docker image that extends the base Grafana image to include the Go Lang development tools to permit remote debugging of the backend plugin. Port `2345` is mapped to the host to allow access to the Go remote debugger `dvl` which can be launched in the container with the following commands:
+
+```sh
+docker exec -it grafana bash
+dlv attach --headless --listen=:2345 --log --api-version=2 $(pgrep gpx_mongodb-datasource_linux_amd64)
+```
+
+Once the remote debugger is running you can attach vscode and debug using the `Connect to server` launch configuration.
+
+### Unit Tests
+
+Run unit tests and generate a coverage report with the following commands:
+
+```sh
+go test ./... -coverprofile=coverage.out
+go tool cover -html=coverage.out
+```

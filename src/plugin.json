@@ -10,9 +10,9 @@
     "description": "Datasource plugin for MongoDB",
     "author": {
       "name": "pwallin",
-      "url": ""
+      "email": "pwallin@micropaws.com"
     },
-    "keywords": [],
+    "keywords": ["MongoDB", "Datasource"],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"
@@ -20,11 +20,11 @@
     "links": [
       {
         "name": "Website",
-        "url": "https://github.com/grafana/grafana-starter-datasource-backend"
+        "url": "https://github.com/maikuroashi/mongodb-datasource"
       },
       {
         "name": "License",
-        "url": "https://github.com/grafana/grafana-starter-datasource-backend/blob/master/LICENSE"
+        "url": "https://github.com/maikuroashi/mongodb-datasource/blob/master/LICENSE"
       }
     ],
     "screenshots": [],
