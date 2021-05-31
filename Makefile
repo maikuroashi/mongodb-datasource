@@ -9,12 +9,11 @@ frontend: node_modules dist/module.js
 
 .PHONY: all clean frontend backend
 
-node_modules:
+node_modules: package.json
 	npm install
 
-dist/module.js: src/**/*.*
+dist/module.js: src/**/*.* README.md
 	npm run-script build
 
-dist/gpx_*: pkg/**/*.go
+dist/gpx_*: pkg/**/*.go go.mod go.sum
 	mage
-
