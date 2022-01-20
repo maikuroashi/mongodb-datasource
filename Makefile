@@ -2,6 +2,7 @@ all: frontend backend
 
 clean:
 	rm -rf dist
+	rm -rf node_modules
 
 backend: dist/gpx_*
 
