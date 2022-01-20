@@ -7,6 +7,21 @@ This is an implementation of a Grafana Data Source Backend Plugin to allow Grafa
 * Grafana > 7.x
 * MongoDB > 2.6
 
+* Development tools
+
+  * Make > 3.x
+  * Node > 16.x
+  * NPM  > 8.x
+    * [Install](https://nodejs.org/en/download/)
+  * Go > go1.17.6
+    * [Install](https://go.dev/doc/install)
+  * Mage > 1.29.2
+    * [Install](https://magefile.org/)
+  * Docker > 20.0
+    * [Install](https://docs.docker.com/engine/install/)
+  * Docker Compose > 1.29
+    * [Install](https://docs.docker.com/compose/install/)
+
 ## Build
 
 The front end and back end components can be built into the `dist` directory by running:
